@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: waste-collection-backend-new
+    runtime: python
+    plan: free
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --workers 1 --bind 0.0.0.0:$PORT app:app
+    envVars:
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_USER
+        value: avnadmin
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        value: defaultdb
+      - key: DB_SSL_CA
+        value: ca.pem
+      - key: JWT_SECRET
+        sync: false
+      - key: FLASK_SECRET_KEY
+        sync: false
+      - key: ALLOW_DEBUG_ROUTES
+        value: "true"

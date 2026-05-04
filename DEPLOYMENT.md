@@ -30,27 +30,48 @@ Keep `ca.pem` in the project root if Aiven requires SSL.
 1. Open Render.
 2. Create a new Web Service.
 3. Connect the GitHub repository.
-4. Set build command:
+4. Use these values:
+
+```text
+Repository: datsnotme/waste-collection-backend-new
+Name: waste-collection-backend-new
+Project: leave blank
+Environment: leave blank
+Language: Python 3
+Branch: main
+Root Directory: leave blank
+Instance Type: Free
+```
+
+The expected Render URL is:
+
+```text
+https://waste-collection-backend-new.onrender.com
+```
+
+If Render says the name is unavailable, choose the closest available name and use that final URL in the later steps.
+
+5. Set build command:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-5. Set start command:
+6. Set start command:
 
 ```bash
 gunicorn --workers 1 --bind 0.0.0.0:$PORT app:app
 ```
 
-6. Add environment variables from `.env.render.example`.
-7. Deploy.
+7. Add environment variables from `.env.render.example`.
+8. Deploy.
 
 After deploy, test:
 
 ```text
-https://YOUR-RENDER-SERVICE.onrender.com/api/health
-https://YOUR-RENDER-SERVICE.onrender.com/api/barangays
-https://YOUR-RENDER-SERVICE.onrender.com/admin
+https://waste-collection-backend-new.onrender.com/api/health
+https://waste-collection-backend-new.onrender.com/api/barangays
+https://waste-collection-backend-new.onrender.com/admin
 ```
 
 ## 4. Create First Admin
@@ -64,7 +85,7 @@ ALLOW_DEBUG_ROUTES=true
 Open:
 
 ```text
-https://YOUR-RENDER-SERVICE.onrender.com/debug/create-admin
+https://waste-collection-backend-new.onrender.com/debug/create-admin
 ```
 
 Default login:
