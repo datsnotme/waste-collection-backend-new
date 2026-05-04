@@ -1,0 +1,48 @@
+{% extends "base_admin.html" %}
+{% block content %}
+<div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+  <div>
+    <h2>Admins</h2>
+    <p>Create admins, reset passwords, delete admins.</p>
+  </div>
+  <a class="btn btn-green" href="/manage_admins/add">+ Add Admin</a>
+</div>
+
+<div class="card">
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Username</th>
+        <th>Full Name</th>
+        <th>Created</th>
+        <th style="width:340px;">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in admins %}
+      <tr>
+        <td>{{ a.id }}</td>
+        <td>{{ a.username }}</td>
+        <td>{{ a.full_name or "" }}</td>
+        <td>{{ a.created_at }}</td>
+        <td>
+          <form style="display:inline" method="POST" action="/manage_admins/{{ a.id }}/reset">
+            <input style="width:180px; display:inline" name="new_password" placeholder="New password" />
+            <button class="btn btn-green" type="submit">Reset</button>
+          </form>
+
+          <form style="display:inline" method="POST" action="/manage_admins/{{ a.id }}/delete"
+                onsubmit="return confirm('Delete this admin?')">
+            <button class="btn btn-red" type="submit">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+      {% if admins|length == 0 %}
+      <tr><td colspan="5">No admins found.</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

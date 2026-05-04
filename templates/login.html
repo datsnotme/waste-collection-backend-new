@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Waste Collection Admin Login</title>
+  <style>
+    :root {
+      --bg: #07100d;
+      --panel: rgba(9, 24, 16, 0.84);
+      --panel-soft: rgba(13, 38, 25, 0.68);
+      --line: rgba(135, 255, 179, 0.16);
+      --line-strong: rgba(135, 255, 179, 0.28);
+      --text: #eefcf2;
+      --muted: #9eb7a8;
+      --accent: #4df58e;
+      --accent-2: #25c76e;
+      --shadow: 0 24px 60px rgba(0, 0, 0, 0.36);
+      --radius: 28px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 24px;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(77,245,142,.18), transparent 22%),
+        radial-gradient(circle at right center, rgba(61,113,255,.12), transparent 25%),
+        linear-gradient(145deg, #07100d 0%, #0b1812 58%, #08110d 100%);
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 28px 28px;
+      opacity: .28;
+      mask-image: radial-gradient(circle at center, black 42%, transparent 88%);
+      pointer-events: none;
+    }
+
+    .shell {
+      width: min(1160px, 100%);
+      display: grid;
+      grid-template-columns: minmax(0, 1.02fr) minmax(360px, .98fr);
+      border: 1px solid var(--line);
+      border-radius: 32px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: rgba(7, 16, 13, 0.9);
+      backdrop-filter: blur(16px);
+      position: relative;
+      margin: 38px 0;
+    }
+
+    .hero {
+      position: relative;
+      padding: 38px 36px 30px;
+      background:
+        linear-gradient(180deg, rgba(15, 40, 27, 0.86), rgba(8, 18, 14, 0.78)),
+        radial-gradient(circle at top left, rgba(77,245,142,.16), transparent 22%);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      padding: 9px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      color: #c7f9d5;
+      font-size: 12px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+
+    .hero h1 {
+      margin: 0;
+      font-size: clamp(36px, 4.3vw, 64px);
+      line-height: .96;
+      letter-spacing: -.05em;
+    }
+
+    .hero p {
+      margin: 16px 0 0;
+      max-width: 500px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .hero-metrics {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .hero-metrics span {
+      padding: 10px 14px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255,255,255,.04);
+      color: #d6fbe1;
+      font-size: 13px;
+    }
+
+    .truck-wrap {
+      margin-top: 22px;
+      border-radius: 26px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(77,245,142,.08), rgba(255,255,255,.03));
+      padding: 14px;
+    }
+
+    .truck {
+      width: 100%;
+      max-height: 270px;
+      object-fit: contain;
+      display: block;
+      filter: drop-shadow(0 18px 28px rgba(0, 0, 0, 0.28));
+    }
+
+    .side {
+      padding: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(180deg, rgba(9, 23, 16, 0.96), rgba(8, 16, 13, 0.84));
+    }
+
+    .login-card {
+      width: min(430px, 100%);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(18, 39, 29, 0.92), rgba(10, 22, 16, 0.88));
+      box-shadow: var(--shadow);
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .login-card::before {
+      content: "";
+      position: absolute;
+      inset: auto -18% -34% auto;
+      width: 260px;
+      height: 260px;
+      background: radial-gradient(circle, rgba(77,245,142,.18), transparent 58%);
+      pointer-events: none;
+    }
+
+    .login-title {
+      margin: 0;
+      font-size: 30px;
+      letter-spacing: -.04em;
+    }
+
+    .login-sub {
+      margin: 8px 0 0;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .error {
+      margin-top: 18px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 95, 98, 0.3);
+      background: rgba(255, 95, 98, 0.12);
+      color: #ffc0c1;
+      font-size: 14px;
+    }
+
+    form {
+      margin-top: 22px;
+      display: grid;
+      gap: 14px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #d1f9dd;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .input {
+      width: 100%;
+      padding: 14px 15px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      color: var(--text);
+      outline: none;
+      transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+    }
+
+    .input:focus {
+      border-color: var(--line-strong);
+      box-shadow: 0 0 0 4px rgba(77,245,142,0.08);
+      transform: translateY(-1px);
+    }
+
+    .input::placeholder {
+      color: #86a796;
+    }
+
+    .btn {
+      margin-top: 8px;
+      width: 100%;
+      border: 0;
+      padding: 14px 16px;
+      border-radius: 16px;
+      cursor: pointer;
+      background: linear-gradient(180deg, var(--accent), var(--accent-2));
+      color: #06230f;
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: .01em;
+      transition: transform .16s ease, box-shadow .16s ease;
+      box-shadow: 0 16px 30px rgba(18, 103, 59, 0.32);
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 20px 34px rgba(18, 103, 59, 0.4);
+    }
+
+    .footnote {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+    }
+
+    @media (max-width: 1120px) {
+      .shell {
+        grid-template-columns: 1fr;
+        max-width: 760px;
+      }
+      .hero {
+        padding: 30px 24px 22px;
+      }
+      .hero h1 {
+        font-size: clamp(34px, 6vw, 52px);
+      }
+      .truck {
+        max-height: 220px;
+      }
+      .side {
+        padding: 0 24px 24px;
+      }
+    }
+
+    @media (max-width: 680px) {
+      body {
+        padding: 14px;
+      }
+      .shell {
+        border-radius: 24px;
+        margin: 12px 0;
+      }
+      .hero {
+        padding: 24px 18px 18px;
+      }
+      .side {
+        padding: 0 18px 18px;
+      }
+      .hero-metrics span {
+        font-size: 12px;
+        padding: 8px 12px;
+      }
+      .truck-wrap {
+        padding: 10px;
+      }
+      .truck {
+        max-height: 180px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <section class="hero">
+      <div class="eyebrow">Operations Console</div>
+      <h1>Waste Collection<br>Management System</h1>
+      <p>Log in to manage route schedules, resident updates, barangay alerts, and administrative access from one modern control center.</p>
+
+      <div class="hero-metrics">
+        <span>Smart Dashboard</span>
+        <span>Resident Sync</span>
+        <span>Schedule Control</span>
+      </div>
+
+      <div class="truck-wrap">
+        <img class="truck" src="{{ url_for('static', filename='images/Truck.png') }}" alt="Truck">
+      </div>
+    </section>
+
+    <section class="side">
+      <div class="login-card">
+        <h2 class="login-title">Admin Login</h2>
+        <p class="login-sub">Authenticate to access the collection dashboard and control panels.</p>
+
+        {% if error %}
+          <div class="error">{{ error }}</div>
+        {% endif %}
+
+        <form method="POST">
+          <div>
+            <label>Username</label>
+            <input class="input" type="text" name="username" placeholder="Enter your username" required />
+          </div>
+
+          <div>
+            <label>Password</label>
+            <input class="input" type="password" name="password" placeholder="Enter your password" required />
+          </div>
+
+          <button class="btn" type="submit">Enter Dashboard</button>
+        </form>
+
+        <div class="footnote">Waste Collection Administration Portal</div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

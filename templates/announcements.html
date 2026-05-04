@@ -1,0 +1,183 @@
+{% extends "base_admin.html" %}
+{% block content %}
+<style>
+  .broadcast-layout {
+    display: grid;
+    grid-template-columns: .95fr 1.05fr;
+    gap: 18px;
+    align-items: start;
+  }
+
+  .stack {
+    display: grid;
+    gap: 14px;
+  }
+
+  .announce-card h3 {
+    margin: 0 0 8px;
+    font-size: 28px;
+    letter-spacing: -.04em;
+  }
+
+  .announce-card p {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+
+  .announce-preview {
+    margin-top: 18px;
+    padding: 18px;
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    background: linear-gradient(180deg, rgba(77,245,142,.08), rgba(255,255,255,.03));
+  }
+
+  .announce-preview strong {
+    display: block;
+    margin-bottom: 8px;
+    color: #c8f8d6;
+  }
+
+  .announce-form {
+    display: grid;
+    gap: 14px;
+  }
+
+  .announce-form small {
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .announce-item {
+    transition: transform .18s ease, border-color .18s ease;
+  }
+
+  .announce-item:hover {
+    transform: translateY(-4px);
+    border-color: var(--line-strong);
+  }
+
+  .announce-item h4 {
+    margin: 0 0 10px;
+    font-size: 18px;
+  }
+
+  .announce-item p {
+    margin: 0 0 12px;
+    color: rgba(238,252,242,.9);
+    line-height: 1.55;
+  }
+
+  .announce-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .actions-row {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+  }
+
+  @media (max-width: 980px) {
+    .broadcast-layout {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<div class="page-header">
+  <div>
+    <h2>Announcements</h2>
+    <p>Broadcast collection alerts to every resident or target a single barangay with a focused message.</p>
+  </div>
+  <a class="btn btn-gray" href="/dashboard">Back to Dashboard</a>
+</div>
+
+<div class="broadcast-layout">
+  <section class="card announce-card">
+    <h3>Broadcast center</h3>
+    <p>Push advisory updates, route changes, and reminders into the resident feed. Use barangay targeting when you want more precise messaging.</p>
+
+    <div class="announce-preview">
+      <strong>Tips for better announcements</strong>
+      <ul style="margin:0; padding-left:18px; color:var(--muted); line-height:1.8;">
+        <li>Keep the title short and urgent.</li>
+        <li>Use notes for timing or preparation reminders.</li>
+        <li>Choose a single barangay when the update is route-specific.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="card">
+    <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start; margin-bottom:18px;">
+      <div>
+        <h3 style="margin:0; font-size:24px; letter-spacing:-.03em;">Send Announcement</h3>
+        <p style="margin:8px 0 0; color:var(--muted);">Publish a new announcement to the selected audience.</p>
+      </div>
+      <span class="badge active">Live</span>
+    </div>
+
+    <form method="POST" class="announce-form">
+      <div>
+        <label>Target</label>
+        <select name="target_barangay_id">
+          <option value="">Broadcast to All Barangays</option>
+          {% for b in barangays %}
+            <option value="{{ b.id }}">Send to {{ b.name }}</option>
+          {% endfor %}
+        </select>
+        <small>Select a barangay only when the update is location-specific.</small>
+      </div>
+
+      <div>
+        <label>Title</label>
+        <input type="text" name="title" placeholder="Collection Advisory" required>
+      </div>
+
+      <div>
+        <label>Message</label>
+        <textarea name="message" rows="5" placeholder="Type your announcement..." required></textarea>
+      </div>
+
+      <div class="actions-row">
+        <a class="btn btn-gray" href="/dashboard">Cancel</a>
+        <button class="btn btn-green" type="submit">Send Announcement</button>
+      </div>
+    </form>
+  </section>
+</div>
+
+<div class="page-header" style="margin-top:20px;">
+  <div>
+    <h2 style="font-size:24px;">Announcement History</h2>
+    <p>Recent messages delivered from the admin panel.</p>
+  </div>
+</div>
+
+<div class="stack">
+  {% for a in announcements %}
+    <section class="card announce-item">
+      <div class="announce-meta" style="margin-bottom:10px;">
+        {% if a.target_barangay_id %}
+          <span class="badge active">Target: {{ a.target_barangay_name }}</span>
+        {% else %}
+          <span class="badge active">Target: All Barangays</span>
+        {% endif %}
+        <span>{{ a.created_at }}</span>
+      </div>
+      <h4>{{ a.title }}</h4>
+      <p>{{ a.message }}</p>
+    </section>
+  {% else %}
+    <section class="card">
+      <p style="margin:0; color:var(--muted);">No announcements yet.</p>
+    </section>
+  {% endfor %}
+</div>
+{% endblock %}

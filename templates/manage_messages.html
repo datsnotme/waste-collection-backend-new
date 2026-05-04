@@ -1,0 +1,100 @@
+{% extends "base_admin.html" %}
+{% block content %}
+<style>
+  .messages-stack {
+    display: grid;
+    gap: 16px;
+  }
+
+  .message-card {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .meta-row span {
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .message-box,
+  .reply-box {
+    padding: 16px;
+    border-radius: 18px;
+    border: 1px solid var(--line);
+  }
+
+  .message-box {
+    background: rgba(255,255,255,.03);
+  }
+
+  .reply-box {
+    background: rgba(77,245,142,.06);
+  }
+
+  .reply-form {
+    display: grid;
+    gap: 12px;
+  }
+
+  .reply-actions {
+    display: flex;
+    justify-content: flex-end;
+  }
+</style>
+
+<div class="page-header">
+  <div>
+    <h2>Resident Messages</h2>
+    <p>Receive collection requests, reports, and other concerns from the mobile app, then reply from this inbox.</p>
+  </div>
+  <span>{{ messages|length }} messages</span>
+</div>
+
+<div class="messages-stack">
+  {% for item in messages %}
+    <section class="card message-card">
+      <div class="meta-row">
+        <span class="badge active">{{ item.category }}</span>
+        <span>{{ item.resident_barangay_name or 'Unknown Barangay' }}</span>
+        <span>{{ item.resident_phone }}</span>
+        <span>{{ item.created_at }}</span>
+      </div>
+
+      <div class="message-box">
+        <strong style="display:block; margin-bottom:8px;">Resident Message</strong>
+        <div>{{ item.message }}</div>
+      </div>
+
+      {% if item.admin_reply %}
+        <div class="reply-box">
+          <strong style="display:block; margin-bottom:8px;">Admin Reply</strong>
+          <div>{{ item.admin_reply }}</div>
+          <div style="margin-top:10px; color:var(--muted); font-size:12px;">Replied {{ item.replied_at }}</div>
+        </div>
+      {% endif %}
+
+      <form class="reply-form" method="POST" action="/messages/{{ item.id }}/reply">
+        <div>
+          <label>{% if item.admin_reply %}Update reply{% else %}Reply{% endif %}</label>
+          <textarea name="admin_reply" rows="4" placeholder="Type your reply to the resident...">{{ item.admin_reply or '' }}</textarea>
+        </div>
+        <div class="reply-actions">
+          <button class="btn btn-green" type="submit">{% if item.admin_reply %}Update Reply{% else %}Send Reply{% endif %}</button>
+        </div>
+      </form>
+    </section>
+  {% else %}
+    <section class="card">
+      <p style="margin:0; color:var(--muted);">No resident messages yet.</p>
+    </section>
+  {% endfor %}
+</div>
+{% endblock %}

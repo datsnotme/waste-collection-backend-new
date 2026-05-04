@@ -1,0 +1,364 @@
+{% extends "base_admin.html" %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2>Operations Dashboard</h2>
+    <p>Welcome back, {{ admin }}. Hover the cards to preview motion, then click to jump straight into each panel.</p>
+  </div>
+  <span>{{ schedules|length }} total schedule records</span>
+</div>
+
+<style>
+  .hero-strip {
+    display: grid;
+    grid-template-columns: 1.3fr .7fr;
+    gap: 18px;
+    margin-bottom: 20px;
+  }
+
+  .hero-panel {
+    min-height: 180px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .hero-panel::before {
+    content: "";
+    position: absolute;
+    inset: auto -15% -35% auto;
+    width: 260px;
+    height: 260px;
+    background: radial-gradient(circle, rgba(77,245,142,.22), transparent 60%);
+    pointer-events: none;
+  }
+
+  .hero-panel h3 {
+    margin: 0 0 8px;
+    font-size: 30px;
+    letter-spacing: -.04em;
+  }
+
+  .hero-panel p {
+    max-width: 620px;
+    color: var(--muted);
+    line-height: 1.55;
+    margin-bottom: 18px;
+  }
+
+  .hero-metrics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .hero-pill {
+    padding: 10px 14px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.05);
+    border: 1px solid var(--line);
+    color: #d9fce6;
+    font-size: 13px;
+  }
+
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 18px;
+    margin-bottom: 22px;
+  }
+
+  .dash-card {
+    position: relative;
+    overflow: hidden;
+    display: block;
+    text-decoration: none;
+    color: var(--text);
+    min-height: 188px;
+    transform-style: preserve-3d;
+    transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+    cursor: pointer;
+  }
+
+  .dash-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(77,245,142,.16), transparent 28%),
+      linear-gradient(180deg, rgba(255,255,255,.04), transparent);
+    opacity: .85;
+    pointer-events: none;
+  }
+
+  .dash-card:hover {
+    border-color: var(--line-strong);
+    box-shadow: 0 28px 60px rgba(0,0,0,.35);
+  }
+
+  .dash-card .meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 26px;
+  }
+
+  .dash-card small {
+    color: #9fd6b0;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    font-size: 11px;
+  }
+
+  .dash-card .arrow {
+    font-size: 24px;
+    color: #a5eebd;
+  }
+
+  .dash-card h3 {
+    margin: 0 0 8px;
+    font-size: 18px;
+  }
+
+  .dash-card .value {
+    margin: 0;
+    font-size: 48px;
+    font-weight: 800;
+    letter-spacing: -.05em;
+  }
+
+  .dash-card p:last-child {
+    margin: 14px 0 0;
+    color: var(--muted);
+    line-height: 1.45;
+  }
+
+  .section-title {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 16px;
+    margin: 12px 0 12px;
+  }
+
+  .section-title h3 {
+    margin: 0;
+    font-size: 26px;
+    letter-spacing: -.03em;
+  }
+
+  .section-title p {
+    margin: 0;
+    color: var(--muted);
+  }
+
+  .table-shell {
+    overflow: hidden;
+    padding: 0;
+  }
+
+  .table-toolbar {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    padding: 18px 18px 8px;
+  }
+
+  .table-toolbar span {
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .badge-scheduled { background: rgba(77,245,142,.14); color: var(--accent); }
+  .badge-done { background: rgba(75,155,255,.16); color: #8ec3ff; }
+
+  .actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .inline-form { display: inline; }
+
+  @media (max-width: 980px) {
+    .hero-strip { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="hero-strip">
+  <section class="card hero-panel">
+    <h3>Live Collection Control</h3>
+    <p>Track active routes, monitor resident growth, and jump directly into the management panel you need without hunting through menus.</p>
+    <div class="hero-metrics">
+      <div class="hero-pill">{{ total_scheduled }} active collections</div>
+      <div class="hero-pill">{{ total_announcements }} announcements sent</div>
+      <div class="hero-pill">{{ total_residents }} registered residents</div>
+    </div>
+  </section>
+
+  <section class="card hero-panel">
+    <small style="color:#9fd6b0; letter-spacing:.14em; text-transform:uppercase;">Fast Actions</small>
+    <h3 style="margin-top:10px;">Jump in</h3>
+    <p>Use the animated cards below to open schedules, resident tools, announcements, and admin access instantly.</p>
+    <div class="hero-metrics">
+      <a class="btn btn-green" href="/add_schedule">New Schedule</a>
+      <a class="btn btn-gray" href="/announcements">Send Alert</a>
+    </div>
+  </section>
+</div>
+
+<div class="cards-grid">
+  <a class="card dash-card interactive-card" href="/manage_residents">
+    <div class="meta">
+      <small>Residents</small>
+      <span class="arrow">↗</span>
+    </div>
+    <h3>Total Residents</h3>
+    <p class="value">{{ total_residents }}</p>
+    <p>Registered mobile users. Click to manage resident records and activation status.</p>
+  </a>
+
+  <a class="card dash-card interactive-card" href="/add_schedule">
+    <div class="meta">
+      <small>Coverage</small>
+      <span class="arrow">↗</span>
+    </div>
+    <h3>Total Barangays</h3>
+    <p class="value">{{ total_barangays }}</p>
+    <p>Service areas currently covered by your waste collection operations.</p>
+  </a>
+
+  <a class="card dash-card interactive-card" href="#schedule-table">
+    <div class="meta">
+      <small>Schedules</small>
+      <span class="arrow">↗</span>
+    </div>
+    <h3>Total Schedules</h3>
+    <p class="value">{{ total_schedules }}</p>
+    <p>All collection schedules stored. Click to jump to the schedule table below.</p>
+  </a>
+
+  <a class="card dash-card interactive-card" href="#schedule-table">
+    <div class="meta">
+      <small>Active</small>
+      <span class="arrow">↗</span>
+    </div>
+    <h3>Scheduled Runs</h3>
+    <p class="value" style="color:var(--accent);">{{ total_scheduled }}</p>
+    <p>Current live collection entries waiting to be completed.</p>
+  </a>
+
+  <a class="card dash-card interactive-card" href="#schedule-table">
+    <div class="meta">
+      <small>Completed</small>
+      <span class="arrow">↗</span>
+    </div>
+    <h3>Done Records</h3>
+    <p class="value" style="color:#8ec3ff;">{{ total_done }}</p>
+    <p>Completed collection runs. Click to review the schedule table and statuses.</p>
+  </a>
+
+  <a class="card dash-card interactive-card" href="/announcements">
+    <div class="meta">
+      <small>Broadcast</small>
+      <span class="arrow">↗</span>
+    </div>
+    <h3>Announcements</h3>
+    <p class="value">{{ total_announcements }}</p>
+    <p>Open the announcement panel to send updates to all residents or a single barangay.</p>
+  </a>
+
+  <a class="card dash-card interactive-card" href="/manage_admins">
+    <div class="meta">
+      <small>Admin Access</small>
+      <span class="arrow">↗</span>
+    </div>
+    <h3>Admin Panel</h3>
+    <p class="value">+</p>
+    <p>Create admins, reset passwords, and manage dashboard access for staff.</p>
+  </a>
+</div>
+
+<div class="section-title">
+  <div>
+    <h3 id="schedule-table">Collection Schedule</h3>
+    <p>Every schedule entry is editable directly from the control table.</p>
+  </div>
+</div>
+
+<section class="card table-shell">
+  <div class="table-toolbar">
+    <strong>Schedule Operations</strong>
+    <span>{{ schedules|length }} rows loaded</span>
+  </div>
+
+  <table>
+    <tr>
+      <th>Barangay</th>
+      <th>Date</th>
+      <th>Time</th>
+      <th>Waste Type</th>
+      <th>Notes</th>
+      <th>Status</th>
+      <th>Manage</th>
+    </tr>
+
+    {% for s in schedules %}
+    <tr>
+      <td>{{ s.barangay_name }}</td>
+      <td>{{ s.collection_date }}</td>
+      <td>{{ s.collection_time }}</td>
+      <td>{{ s.waste_type }}</td>
+      <td>{{ s.notes }}</td>
+      <td>
+        {% if s.status == 'done' %}
+          <span class="badge badge-done">DONE</span>
+        {% else %}
+          <span class="badge badge-scheduled">SCHEDULED</span>
+        {% endif %}
+      </td>
+      <td>
+        <div class="actions">
+          <a class="btn btn-gray" href="/schedule/{{ s.id }}/edit">Edit</a>
+
+          {% if s.status != 'done' %}
+          <form class="inline-form" method="POST" action="/schedule/{{ s.id }}/done"
+                onsubmit="return confirm('Mark this schedule as DONE? It will disappear from the client app.')">
+            <button class="btn btn-green" type="submit">Done</button>
+          </form>
+          {% endif %}
+
+          <form class="inline-form" method="POST" action="/schedule/{{ s.id }}/delete"
+                onsubmit="return confirm('Delete this schedule permanently?')">
+            <button class="btn btn-red" type="submit">Delete</button>
+          </form>
+        </div>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+
+<script>
+  document.querySelectorAll('.interactive-card').forEach((card) => {
+    card.addEventListener('mousemove', (event) => {
+      const rect = card.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      const rx = ((y / rect.height) - 0.5) * -8;
+      const ry = ((x / rect.width) - 0.5) * 10;
+
+      card.style.setProperty('--mx', `${(x / rect.width) * 100}%`);
+      card.style.setProperty('--my', `${(y / rect.height) * 100}%`);
+      card.style.transform = `perspective(900px) rotateX(${rx}deg) rotateY(${ry}deg) translateY(-6px)`;
+    });
+
+    card.addEventListener('mouseleave', () => {
+      card.style.transform = 'perspective(900px) rotateX(0deg) rotateY(0deg) translateY(0)';
+      card.style.setProperty('--mx', '50%');
+      card.style.setProperty('--my', '50%');
+    });
+  });
+</script>
+{% endblock %}

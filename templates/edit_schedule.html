@@ -1,0 +1,134 @@
+{% extends "base_admin.html" %}
+{% block content %}
+<style>
+  .editor-layout {
+    display: grid;
+    grid-template-columns: .9fr 1.1fr;
+    gap: 18px;
+  }
+
+  .editor-info h3 {
+    margin: 0 0 10px;
+    font-size: 30px;
+    letter-spacing: -.04em;
+  }
+
+  .editor-info p {
+    margin: 0 0 16px;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+
+  .editor-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  .editor-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .editor-form .full {
+    grid-column: 1 / -1;
+  }
+
+  .actions-row {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 18px;
+  }
+
+  @media (max-width: 980px) {
+    .editor-layout,
+    .editor-form {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<div class="page-header">
+  <div>
+    <h2>Edit Schedule</h2>
+    <p>Adjust route details, change status, or reschedule a collection without leaving the operations panel.</p>
+  </div>
+  <a class="btn btn-gray" href="/dashboard">Back to Dashboard</a>
+</div>
+
+<div class="editor-layout">
+  <section class="card editor-info">
+    <h3>Refine the route</h3>
+    <p>Use this editor to correct a time, move a collection date, switch the barangay target, or mark the route as done.</p>
+
+    <div class="editor-badges">
+      <span class="badge active">Current status: {{ schedule.status|upper }}</span>
+      <span class="badge active">Barangay: {{ schedule.barangay_name }}</span>
+    </div>
+
+    <div style="margin-top:18px; padding:18px; border-radius:22px; border:1px solid var(--line); background:linear-gradient(180deg, rgba(77,245,142,.08), rgba(255,255,255,.03));">
+      <strong style="display:block; margin-bottom:8px; color:#caf8d7;">Editing guidance</strong>
+      <p style="margin:0; color:var(--muted);">If the route is no longer active, set the status to <b style="color:#eefcf2;">done</b>. If the collection is still pending, keep it as <b style="color:#eefcf2;">scheduled</b>.</p>
+    </div>
+  </section>
+
+  <section class="card">
+    <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start; margin-bottom:18px;">
+      <div>
+        <h3 style="margin:0; font-size:24px; letter-spacing:-.03em;">Schedule Editor</h3>
+        <p style="margin:8px 0 0; color:var(--muted);">Update the collection record below.</p>
+      </div>
+      <span class="badge active">Edit Mode</span>
+    </div>
+
+    <form method="POST">
+      <div class="editor-form">
+        <div class="full">
+          <label>Barangay</label>
+          <select name="barangay_id" required>
+            {% for b in barangays %}
+            <option value="{{ b.id }}" {% if b.id == schedule.barangay_id %}selected{% endif %}>{{ b.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label>Collection Date</label>
+          <input type="date" name="collection_date" value="{{ schedule.collection_date }}" required>
+        </div>
+
+        <div>
+          <label>Collection Time</label>
+          <input type="time" name="collection_time" value="{{ schedule.collection_time }}" required>
+        </div>
+
+        <div class="full">
+          <label>Waste Type</label>
+          <input type="text" name="waste_type" value="{{ schedule.waste_type }}">
+        </div>
+
+        <div class="full">
+          <label>Notes</label>
+          <textarea name="notes" rows="5">{{ schedule.notes }}</textarea>
+        </div>
+
+        <div class="full">
+          <label>Status</label>
+          <select name="status">
+            <option value="scheduled" {% if schedule.status == 'scheduled' %}selected{% endif %}>Scheduled</option>
+            <option value="done" {% if schedule.status == 'done' %}selected{% endif %}>Done</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="actions-row">
+        <a class="btn btn-gray" href="/dashboard">Cancel</a>
+        <button type="submit" class="btn btn-green">Update Schedule</button>
+      </div>
+    </form>
+  </section>
+</div>
+{% endblock %}

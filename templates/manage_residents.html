@@ -1,0 +1,56 @@
+{% extends "base_admin.html" %}
+{% block content %}
+<div class="card">
+  <h2>Residents</h2>
+  <p>Manage resident accounts (activate/deactivate, edit barangay, delete).</p>
+</div>
+
+<div class="card">
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Phone</th>
+        <th>Barangay</th>
+        <th>Status</th>
+        <th>Created</th>
+        <th style="width:260px;">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r, b in residents %}
+      <tr>
+        <td>{{ r.id }}</td>
+        <td>{{ r.phone }}</td>
+        <td>{{ b.name }}</td>
+        <td>
+          {% if r.is_active %}
+            <span class="badge active">ACTIVE</span>
+          {% else %}
+            <span class="badge inactive">INACTIVE</span>
+          {% endif %}
+        </td>
+        <td>{{ r.created_at }}</td>
+        <td>
+          <a class="btn btn-gray" href="/manage_residents/{{ r.id }}/edit">Edit</a>
+
+          <form style="display:inline" method="POST" action="/manage_residents/{{ r.id }}/toggle">
+            <button class="btn btn-green" type="submit">
+              {% if r.is_active %}Deactivate{% else %}Activate{% endif %}
+            </button>
+          </form>
+
+          <form style="display:inline" method="POST" action="/manage_residents/{{ r.id }}/delete"
+                onsubmit="return confirm('Delete this resident?')">
+            <button class="btn btn-red" type="submit">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+      {% if residents|length == 0 %}
+      <tr><td colspan="6">No residents found.</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

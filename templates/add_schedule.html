@@ -1,0 +1,192 @@
+{% extends "base_admin.html" %}
+{% block content %}
+<style>
+  .feature-layout {
+    display: grid;
+    grid-template-columns: 1fr 1.15fr;
+    gap: 18px;
+  }
+
+  .feature-panel {
+    position: relative;
+    overflow: hidden;
+    min-height: 100%;
+  }
+
+  .feature-panel::before {
+    content: "";
+    position: absolute;
+    inset: auto -15% -35% auto;
+    width: 260px;
+    height: 260px;
+    background: radial-gradient(circle, rgba(77,245,142,.18), transparent 60%);
+    pointer-events: none;
+  }
+
+  .feature-panel h3 {
+    margin: 0 0 10px;
+    font-size: 30px;
+    letter-spacing: -.04em;
+  }
+
+  .feature-panel p {
+    margin: 0 0 18px;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+
+  .feature-visual {
+    margin-top: 20px;
+    border-radius: 22px;
+    border: 1px solid var(--line);
+    background: linear-gradient(180deg, rgba(77,245,142,.08), rgba(255,255,255,.03));
+    padding: 18px;
+  }
+
+  .feature-visual img {
+    width: 100%;
+    display: block;
+    object-fit: contain;
+    max-height: 320px;
+    filter: drop-shadow(0 16px 30px rgba(0, 0, 0, 0.28));
+  }
+
+  .hint-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  .hint-chip {
+    padding: 8px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,.04);
+    color: #caf8d7;
+    font-size: 12px;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .full {
+    grid-column: 1 / -1;
+  }
+
+  .panel-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .panel-title h3 {
+    margin: 0;
+    font-size: 24px;
+    letter-spacing: -.03em;
+  }
+
+  .panel-title p {
+    margin: 8px 0 0;
+    color: var(--muted);
+  }
+
+  .actions-row {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 18px;
+  }
+
+  @media (max-width: 980px) {
+    .feature-layout,
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<div class="page-header">
+  <div>
+    <h2>Add Schedule</h2>
+    <p>Create a new waste collection run and publish it directly to your resident-facing mobile app.</p>
+  </div>
+  <a class="btn btn-gray" href="/dashboard">Back to Dashboard</a>
+</div>
+
+<div class="feature-layout">
+  <section class="card feature-panel">
+    <h3>Launch a new route</h3>
+    <p>Use this panel to publish collection schedules quickly. The form supports barangay targeting, collection time, waste category, and special notes for residents.</p>
+    <div class="hint-strip">
+      <span class="hint-chip">Live sync to backend</span>
+      <span class="hint-chip">Mobile app ready</span>
+      <span class="hint-chip">Fast dispatch workflow</span>
+    </div>
+
+    <div class="feature-visual">
+      <img src="{{ url_for('static', filename='images/Schedule.png') }}" alt="Schedule illustration">
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="panel-title">
+      <div>
+        <h3>Schedule Details</h3>
+        <p>Fill in the operational details below. Required fields help keep the resident app consistent.</p>
+      </div>
+      <span class="badge active">Ready</span>
+    </div>
+
+    <form method="POST" action="/add_schedule">
+      <div class="form-grid">
+        <div class="full">
+          <label>Barangay</label>
+          <select name="barangay_id" required>
+            <option value="" disabled selected>Select barangay</option>
+            {% for b in barangays %}
+              <option value="{{ b.id }}">{{ b.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label>Collection Date</label>
+          <input type="date" name="collection_date" required />
+        </div>
+
+        <div>
+          <label>Collection Time</label>
+          <input type="time" name="collection_time" required />
+        </div>
+
+        <div class="full">
+          <label>Waste Type</label>
+          <select name="waste_type">
+            <option value="household" selected>Household</option>
+            <option value="biodegradable">Biodegradable</option>
+            <option value="non-biodegradable">Non-biodegradable</option>
+            <option value="recyclable">Recyclable</option>
+            <option value="mixed">Mixed</option>
+          </select>
+        </div>
+
+        <div class="full">
+          <label>Notes</label>
+          <textarea name="notes" rows="5" placeholder="Example: Prepare your waste before 8:00 AM"></textarea>
+        </div>
+      </div>
+
+      <div class="actions-row">
+        <a class="btn btn-gray" href="/dashboard">Cancel</a>
+        <button type="submit" class="btn btn-green">Save Schedule</button>
+      </div>
+    </form>
+  </section>
+</div>
+{% endblock %}

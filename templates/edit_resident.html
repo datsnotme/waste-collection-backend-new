@@ -1,0 +1,43 @@
+{% extends "base_admin.html" %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2>Edit Resident</h2>
+    <p>Update phone details, barangay assignment, and account status.</p>
+  </div>
+  <a class="btn btn-gray" href="/manage_residents">Back to Residents</a>
+</div>
+
+<div class="card" style="max-width:760px;">
+  <form method="POST">
+    <div class="grid">
+      <div>
+        <label>Phone Number</label>
+        <input type="text" name="phone" value="{{ resident.phone }}" required />
+      </div>
+
+      <div>
+        <label>Status</label>
+        <select name="is_active">
+          <option value="1" {% if resident.is_active %}selected{% endif %}>Active</option>
+          <option value="0" {% if not resident.is_active %}selected{% endif %}>Inactive</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="margin-top:14px;">
+      <label>Barangay</label>
+      <select name="barangay_id" required>
+        {% for b in barangays %}
+        <option value="{{ b.id }}" {% if b.id == resident.barangay_id %}selected{% endif %}>{{ b.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div style="display:flex; gap:12px; margin-top:18px;">
+      <button class="btn btn-green" type="submit">Save Changes</button>
+      <a class="btn btn-gray" href="/manage_residents">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,9 @@
+.env
+.env.*
+!.env.render.example
+firebase_service_account.json
+__pycache__/
+venv/
+*.pyc
+.vscode/
+*.log

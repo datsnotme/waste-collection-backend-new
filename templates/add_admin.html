@@ -1,0 +1,32 @@
+{% extends "base_admin.html" %}
+{% block content %}
+<div class="card">
+  <h2>Add Admin</h2>
+  {% if error %}
+    <p style="color:#b71c1c; font-weight:bold;">{{ error }}</p>
+  {% endif %}
+
+  <form method="POST">
+    <div class="grid">
+      <div>
+        <label>Username</label>
+        <input name="username" placeholder="e.g. admin2" />
+      </div>
+      <div>
+        <label>Full Name (optional)</label>
+        <input name="full_name" placeholder="e.g. Juan Dela Cruz" />
+      </div>
+    </div>
+
+    <div style="margin-top:12px;">
+      <label>Password</label>
+      <input name="password" type="password" placeholder="Create password" />
+    </div>
+
+    <div style="margin-top:14px;">
+      <button class="btn btn-green" type="submit">Create</button>
+      <a class="btn btn-gray" href="/manage_admins">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

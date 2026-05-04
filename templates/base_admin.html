@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>{{ title or "Waste Collection Management System" }}</title>
+  <style>
+    :root {
+      --bg: #08110d;
+      --panel: rgba(10, 28, 19, 0.82);
+      --panel-strong: rgba(9, 22, 16, 0.94);
+      --line: rgba(135, 255, 179, 0.16);
+      --line-strong: rgba(135, 255, 179, 0.28);
+      --text: #eefcf2;
+      --muted: #9eb7a8;
+      --accent: #4df58e;
+      --accent-2: #25c76e;
+      --danger: #ff5f62;
+      --warning: #4b9bff;
+      --shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+      --radius: 24px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(56, 156, 92, 0.28), transparent 24%),
+        radial-gradient(circle at right center, rgba(35, 104, 255, 0.12), transparent 28%),
+        linear-gradient(145deg, #07100d 0%, #0b1812 55%, #0a0f0d 100%);
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 28px 28px;
+      mask-image: radial-gradient(circle at center, black 45%, transparent 92%);
+      opacity: .35;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 24px 22px;
+      border-right: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(8, 23, 16, 0.96), rgba(7, 16, 12, 0.86));
+      backdrop-filter: blur(14px);
+      z-index: 3;
+      overflow: hidden;
+    }
+
+    .brand {
+      display: grid;
+      place-items: center;
+      gap: 8px;
+      padding: 12px;
+      margin-bottom: 18px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(77, 245, 142, 0.12), rgba(77, 245, 142, 0.03));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+      text-align: center;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .brand-logo {
+      width: 150px;
+      max-width: 100%;
+      height: 84px;
+      display: block;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: contain;
+      filter: drop-shadow(0 14px 22px rgba(0, 0, 0, 0.34));
+    }
+
+    .brand-title {
+      margin: 0;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      max-width: 100%;
+      overflow-wrap: anywhere;
+    }
+
+    .nav {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .nav a {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 14px 16px;
+      border-radius: 16px;
+      color: var(--text);
+      text-decoration: none;
+      border: 1px solid transparent;
+      background: rgba(255,255,255,0.02);
+      transition: transform .18s ease, border-color .18s ease, background .18s ease, box-shadow .18s ease;
+      min-width: 0;
+    }
+
+    .nav a:hover,
+    .nav a.active {
+      transform: translateY(-1px);
+      border-color: var(--line-strong);
+      background: rgba(77, 245, 142, 0.08);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+    }
+
+    .nav span,
+    .nav small {
+      min-width: 0;
+    }
+
+    .nav small {
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .content {
+      padding: 26px;
+    }
+
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 22px;
+      padding: 20px 22px;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: linear-gradient(180deg, rgba(18, 39, 29, 0.88), rgba(10, 23, 16, 0.72));
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+
+    .page-header h2 {
+      margin: 0;
+      font-size: 28px;
+      letter-spacing: -.03em;
+    }
+
+    .page-header p,
+    .page-header span {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .card {
+      background: linear-gradient(180deg, rgba(18, 40, 29, 0.88), rgba(11, 20, 17, 0.82));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+      margin-bottom: 16px;
+    }
+
+    .btn {
+      border: 1px solid transparent;
+      padding: 10px 14px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 700;
+      text-decoration: none;
+      transition: transform .15s ease, opacity .15s ease, border-color .15s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+    .btn-green { background: linear-gradient(180deg, var(--accent), var(--accent-2)); color: #05220f; }
+    .btn-red { background: linear-gradient(180deg, #ff6f71, #db4448); color: white; }
+    .btn-gray { background: rgba(255,255,255,.08); color: var(--text); border-color: var(--line); }
+
+    .badge {
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .active { background: rgba(77, 245, 142, 0.12); color: var(--accent); }
+    .inactive { background: rgba(255, 95, 98, 0.14); color: #ff8c8d; }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.04);
+      color: var(--text);
+      outline: none;
+    }
+
+    select {
+      color-scheme: dark;
+    }
+
+    select option,
+    select optgroup {
+      background: #f5f7f6;
+      color: #111815;
+    }
+
+    select option:checked {
+      background: #6f7471;
+      color: #ffffff;
+      font-weight: 700;
+    }
+
+    select option:hover,
+    select option:focus {
+      background: #d8dcda;
+      color: #111815;
+    }
+
+    select option:disabled {
+      color: #6f7772;
+      background: #f5f7f6;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--line-strong);
+      box-shadow: 0 0 0 4px rgba(77,245,142,0.08);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    th, td {
+      padding: 14px 12px;
+      text-align: left;
+      font-size: 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+
+    th {
+      color: #baf3ca;
+      font-weight: 800;
+      background: rgba(77,245,142,0.08);
+    }
+
+    td {
+      color: rgba(238, 252, 242, 0.92);
+    }
+
+    .grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar {
+        position: relative;
+        height: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .brand-logo { height: 96px; }
+      .content { padding: 18px; }
+      .page-header { flex-direction: column; align-items: flex-start; }
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  {% set current_path = request.path %}
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">
+        <div
+          class="brand-logo"
+          role="img"
+          aria-label="Waste Collection truck logo"
+          style="background-image: url('{{ url_for('static', filename='images/Truck.png') }}');"
+        ></div>
+        <p class="brand-title">Waste Collection</p>
+      </div>
+
+      <nav class="nav">
+        <a href="/dashboard" class="{% if current_path == '/dashboard' %}active{% endif %}">
+          <span>Dashboard</span>
+          <small>Overview</small>
+        </a>
+        <a href="/add_schedule" class="{% if current_path == '/add_schedule' %}active{% endif %}">
+          <span>Schedule</span>
+          <small>Create</small>
+        </a>
+        <a href="/announcements" class="{% if current_path == '/announcements' %}active{% endif %}">
+          <span>Announcements</span>
+          <small>Broadcast</small>
+        </a>
+        <a href="/messages" class="{% if current_path.startswith('/messages') %}active{% endif %}">
+          <span>Messages</span>
+          <small>Inbox</small>
+        </a>
+        <a href="/manage_residents" class="{% if current_path.startswith('/manage_residents') %}active{% endif %}">
+          <span>Residents</span>
+          <small>Manage</small>
+        </a>
+        <a href="/manage_admins" class="{% if current_path.startswith('/manage_admin') %}active{% endif %}">
+          <span>Admins</span>
+          <small>Access</small>
+        </a>
+        <a href="/logout">
+          <span>Logout</span>
+          <small>Exit</small>
+        </a>
+      </nav>
+    </aside>
+
+    <main class="content">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</body>
+</html>
