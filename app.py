@@ -1677,7 +1677,7 @@ def create_admin():
 
     conn = get_db_connection()
     if not conn:
-        return "DB ERROR", 500
+        return get_last_db_error() or "Database connection failed", 500
 
     cur = None
     try:
@@ -1691,6 +1691,15 @@ def create_admin():
     finally:
         close_quietly(cur)
         close_quietly(conn)
+
+
+@app.route("/debug/ensure-tables")
+def debug_ensure_tables():
+    if not env_flag("ALLOW_DEBUG_ROUTES"):
+        return "Debug routes are disabled", 404
+
+    ensure_tables()
+    return jsonify({"ok": True, "message": "Tables checked and default barangays seeded when empty"})
 
 
 @app.route("/debug/fcm-test")
