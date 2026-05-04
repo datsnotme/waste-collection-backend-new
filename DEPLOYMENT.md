@@ -2,6 +2,12 @@
 
 This project is a Flask backend/admin panel. InfinityFree free hosting cannot run Flask, so the live backend should run on Render and the InfinityFree domain should redirect to it.
 
+Your current Render backend URL is:
+
+```text
+https://waste-backend-system.onrender.com
+```
+
 ## 1. Prepare GitHub
 
 1. Create a GitHub repository for this backend folder.
@@ -11,6 +17,12 @@ This project is a Flask backend/admin panel. InfinityFree free hosting cannot ru
 ## 2. Prepare Aiven MySQL
 
 Use an Aiven MySQL service as the live database.
+
+If the old service is `Powered off`, create a new Aiven MySQL service instead of reusing the old host. A powered-off service can make the host disappear or refuse connections, which causes Render errors such as:
+
+```text
+Can't connect to MySQL server
+```
 
 Required values:
 
@@ -24,6 +36,33 @@ DB_SSL_CA=ca.pem
 ```
 
 Keep `ca.pem` in the project root if Aiven requires SSL.
+
+### Replace a Powered-Off Aiven Service
+
+1. In Aiven, click `Create service`.
+2. Choose `MySQL`.
+3. Choose the free plan if available.
+4. Choose the closest available region.
+5. Name it something clear, for example:
+
+```text
+wastecollection-db-new
+```
+
+6. Wait until the new service status is `Running`.
+7. Open the new service connection details and copy:
+
+```env
+DB_HOST=<new-aiven-host>
+DB_PORT=<new-aiven-port>
+DB_USER=avnadmin
+DB_PASSWORD=<new-aiven-password>
+DB_NAME=defaultdb
+```
+
+8. Open or download the new `CA certificate`.
+9. If the certificate is different from the current `ca.pem`, replace `ca.pem` in this project, commit it, push it, then redeploy Render.
+10. Keep the old Aiven service until the new Render connection is confirmed working, then delete the old service later if you no longer need it.
 
 ## 3. Deploy To Render
 
@@ -43,13 +82,19 @@ Root Directory: leave blank
 Instance Type: Free
 ```
 
-The expected Render URL is:
+The expected Render URL for that service name would be:
 
 ```text
 https://waste-collection-backend-new.onrender.com
 ```
 
-If Render says the name is unavailable, choose the closest available name and use that final URL in the later steps.
+Your created service is currently available at:
+
+```text
+https://waste-backend-system.onrender.com
+```
+
+Use the final Render URL shown by Render in the later steps.
 
 5. Set build command:
 
@@ -69,10 +114,13 @@ gunicorn --workers 1 --bind 0.0.0.0:$PORT app:app
 After deploy, test:
 
 ```text
-https://waste-collection-backend-new.onrender.com/api/health
-https://waste-collection-backend-new.onrender.com/api/barangays
-https://waste-collection-backend-new.onrender.com/admin
+https://waste-backend-system.onrender.com/api/health
+https://waste-backend-system.onrender.com/debug/ensure-tables
+https://waste-backend-system.onrender.com/api/barangays
+https://waste-backend-system.onrender.com/admin
 ```
+
+`/debug/ensure-tables` only works when `ALLOW_DEBUG_ROUTES=true`.
 
 ## 4. Create First Admin
 
@@ -85,7 +133,7 @@ ALLOW_DEBUG_ROUTES=true
 Open:
 
 ```text
-https://waste-collection-backend-new.onrender.com/debug/create-admin
+https://waste-backend-system.onrender.com/debug/create-admin
 ```
 
 Default login:
