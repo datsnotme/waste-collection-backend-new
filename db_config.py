@@ -1,4 +1,5 @@
 import os
+import socket
 
 import mysql.connector
 from dotenv import load_dotenv
@@ -57,6 +58,16 @@ def _is_local_mysql():
 
 
 def _connect(include_database=True):
+    host = os.getenv("DB_HOST")
+    if host:
+        try:
+            socket.getaddrinfo(host, int(os.getenv("DB_PORT", "3306")))
+        except socket.gaierror as e:
+            raise Error(
+                f"Database host could not be found in DNS: {host}. "
+                "Check DB_HOST in Render and make sure the Aiven service is Running."
+            ) from e
+
     return mysql.connector.connect(**_base_connection_kwargs(include_database=include_database))
 
 
