@@ -512,6 +512,18 @@ def notify_nearby_ready_residents(conn, barangay_id, truck_latitude, truck_longi
     try:
         cur = conn.cursor(dictionary=True, buffered=True)
         cur.execute("""
+            CREATE TABLE IF NOT EXISTS truck_proximity_alerts (
+                id INT NOT NULL AUTO_INCREMENT,
+                schedule_id INT NOT NULL,
+                resident_phone VARCHAR(20) NOT NULL,
+                alert_type VARCHAR(50) NOT NULL DEFAULT 'truck_near',
+                distance_meters INT DEFAULT NULL,
+                sent_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                UNIQUE KEY uq_truck_alert_once (schedule_id, resident_phone, alert_type)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        """)
+        cur.execute("""
             SELECT rm.resident_phone, rm.latitude, rm.longitude, r.fcm_token
             FROM ready_markers rm
             JOIN residents r ON r.phone = rm.resident_phone
