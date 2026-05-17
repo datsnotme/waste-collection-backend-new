@@ -73,6 +73,33 @@ def send_data_to_topic(topic: str, data: dict):
         return None
 
 
+def send_notification_to_topic(topic: str, title: str, body: str, data=None):
+    if not _initialize_firebase():
+        print(f"Skipping FCM notification to topic={topic} because Firebase is not configured.")
+        return None
+
+    try:
+        message = messaging.Message(
+            topic=topic,
+            notification=messaging.Notification(title=title, body=body),
+            data=_string_data(data),
+            android=messaging.AndroidConfig(
+                priority="high",
+                notification=messaging.AndroidNotification(
+                    priority="high",
+                    default_sound=True,
+                ),
+            ),
+        )
+
+        response = messaging.send(message)
+        print(f"FCM topic notification sent successfully: {response}")
+        return response
+    except Exception as e:
+        print(f"FCM topic notification failed: {e}")
+        return None
+
+
 def send_notification_to_token(token: str, title: str, body: str, data=None):
     if not token:
         return None

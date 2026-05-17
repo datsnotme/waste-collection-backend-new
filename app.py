@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 from db_config import get_db_connection, get_last_db_error
 
 
-from fcm_service import send_data_to_topic, send_notification_to_token
+from fcm_service import send_notification_to_topic, send_notification_to_token
 
 
 # =====================================================================
@@ -439,6 +439,10 @@ def topic_for_barangay(barangay_id):
     return f"barangay_{barangay_id}"
 
 
+def driver_topic_for_barangay(barangay_id):
+    return f"drivers_barangay_{barangay_id}"
+
+
 def safe_send_topic(topic: str, title: str, body: str, data=None):
     """
     Safe wrapper so FCM failures won't crash your Flask app.
@@ -451,7 +455,12 @@ def safe_send_topic(topic: str, title: str, body: str, data=None):
 
         payload = {str(k): "" if v is None else str(v) for k, v in payload.items()}
 
-        send_data_to_topic(topic=topic, data=payload)
+        send_notification_to_topic(
+            topic=topic,
+            title=str(title),
+            body=str(body),
+            data=payload,
+        )
         print(f"✅ FCM SENT topic={topic} type={payload.get('type')}")
     except Exception as e:
         print("❌ FCM ERROR:", e)
@@ -766,6 +775,20 @@ def add_schedule():
                     "waste_type": waste_type,
                 },
             )
+            safe_send_topic(
+                topic=driver_topic_for_barangay(barangay_id),
+                title="New Collection Schedule",
+                body=f"{barangay_name}: {collection_date} at {collection_time} ({waste_type})",
+                data={
+                    "type": "driver_schedule",
+                    "schedule_id": schedule_id,
+                    "barangay_id": barangay_id,
+                    "barangay_name": barangay_name,
+                    "collection_date": collection_date,
+                    "collection_time": collection_time,
+                    "waste_type": waste_type,
+                },
+            )
 
             log_action("add_schedule", "admin", session.get("admin_id"), f"schedule_id={schedule_id}")
             return redirect(url_for("admin_dashboard"))
@@ -844,6 +867,17 @@ def admin_announcements():
                         "target_barangay_name": target_barangay_name,
                     },
                 )
+                safe_send_topic(
+                    topic=driver_topic_for_barangay(target_id_value),
+                    title=f"Announcement: {title}",
+                    body=message,
+                    data={
+                        "type": "driver_announcement",
+                        "announcement_id": announcement_id,
+                        "target_barangay_id": target_id_value,
+                        "target_barangay_name": target_barangay_name,
+                    },
+                )
             else:
                 safe_send_topic(
                     topic="all_residents",
@@ -853,6 +887,16 @@ def admin_announcements():
                         "type": "announcement",
                         "announcement_id": announcement_id,
                         "target": "all_residents",
+                    },
+                )
+                safe_send_topic(
+                    topic="all_drivers",
+                    title=f"Announcement: {title}",
+                    body=message,
+                    data={
+                        "type": "driver_announcement",
+                        "announcement_id": announcement_id,
+                        "target": "all_drivers",
                     },
                 )
 
@@ -1301,13 +1345,34 @@ def reply_message(message_id):
 
     cur = None
     try:
-        cur = conn.cursor()
+        cur = conn.cursor(dictionary=True, buffered=True)
+        cur.execute("""
+            SELECT m.resident_phone, m.resident_barangay_id, r.fcm_token
+            FROM messages m
+            LEFT JOIN residents r ON r.phone = m.resident_phone
+            WHERE m.id=%s
+        """, (message_id,))
+        message_row = cur.fetchone()
+
         cur.execute("""
             UPDATE messages
             SET admin_reply=%s, replied_at=NOW()
             WHERE id=%s
         """, (admin_reply, message_id))
         conn.commit()
+
+        if message_row and message_row.get("fcm_token"):
+            send_notification_to_token(
+                token=message_row["fcm_token"],
+                title="Admin replied to your message",
+                body=admin_reply,
+                data={
+                    "type": "admin_reply",
+                    "message_id": message_id,
+                    "barangay_id": message_row.get("resident_barangay_id"),
+                },
+            )
+
         log_action("reply_message", "admin", session.get("admin_id"), f"message_id={message_id}")
         return redirect(url_for("manage_messages"))
     finally:
@@ -1497,6 +1562,19 @@ def api_send_message():
             VALUES (%s, %s, %s, %s, %s, NOW())
         """, (phone, barangay_id, barangay_name, category, message))
         conn.commit()
+
+        safe_send_topic(
+            topic=driver_topic_for_barangay(barangay_id),
+            title=f"New {category} message",
+            body=f"{barangay_name}: {message}",
+            data={
+                "type": "resident_message",
+                "phone": phone,
+                "barangay_id": barangay_id,
+                "barangay_name": barangay_name,
+                "category": category,
+            },
+        )
 
         return jsonify({"message": "Sent"}), 201
     finally:
