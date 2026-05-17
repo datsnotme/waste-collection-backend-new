@@ -9,12 +9,13 @@ from datetime import datetime, timedelta, date
 from apscheduler.schedulers.background import BackgroundScheduler
 import os
 import atexit
+import math
 from dotenv import load_dotenv
 
 from db_config import get_db_connection, get_last_db_error
 
 
-from fcm_service import send_data_to_topic
+from fcm_service import send_data_to_topic, send_notification_to_token
 
 
 # =====================================================================
@@ -39,6 +40,8 @@ app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=24)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "admin-panel-secret")
 
 CORS(app)
+
+TRUCK_NEAR_ALERT_METERS = int(os.getenv("TRUCK_NEAR_ALERT_METERS", "700"))
 jwt = JWTManager(app)
 
 
@@ -347,6 +350,33 @@ def ensure_tables():
         )
 
         # -------------------------------------------------------------
+        # TRUCK PROXIMITY ALERTS
+        # -------------------------------------------------------------
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS truck_proximity_alerts (
+                id INT NOT NULL AUTO_INCREMENT,
+                schedule_id INT NOT NULL,
+                resident_phone VARCHAR(20) NOT NULL,
+                alert_type VARCHAR(50) NOT NULL DEFAULT 'truck_near',
+                distance_meters INT DEFAULT NULL,
+                sent_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                UNIQUE KEY uq_truck_alert_once (schedule_id, resident_phone, alert_type)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        """)
+        ensure_column(cur, "truck_proximity_alerts", "schedule_id", "schedule_id INT NOT NULL DEFAULT 0")
+        ensure_column(cur, "truck_proximity_alerts", "resident_phone", "resident_phone VARCHAR(20) NOT NULL DEFAULT ''")
+        ensure_column(cur, "truck_proximity_alerts", "alert_type", "alert_type VARCHAR(50) NOT NULL DEFAULT 'truck_near'")
+        ensure_column(cur, "truck_proximity_alerts", "distance_meters", "distance_meters INT DEFAULT NULL")
+        ensure_column(cur, "truck_proximity_alerts", "sent_at", "sent_at DATETIME DEFAULT CURRENT_TIMESTAMP")
+        ensure_index(
+            cur,
+            "truck_proximity_alerts",
+            "uq_truck_alert_once",
+            "ALTER TABLE truck_proximity_alerts ADD UNIQUE KEY uq_truck_alert_once (schedule_id, resident_phone, alert_type)"
+        )
+
+        # -------------------------------------------------------------
         # OPTIONAL SEED BARANGAYS
         # -------------------------------------------------------------
         cur.execute("SELECT COUNT(*) FROM barangays")
@@ -454,6 +484,93 @@ def get_current_schedule_for_barangay(conn, barangay_id):
         if row:
             return format_schedule_row(row)
         return None
+    finally:
+        close_quietly(cur)
+
+
+def distance_meters(lat1, lon1, lat2, lon2):
+    radius = 6371000
+    phi1 = math.radians(float(lat1))
+    phi2 = math.radians(float(lat2))
+    delta_phi = math.radians(float(lat2) - float(lat1))
+    delta_lambda = math.radians(float(lon2) - float(lon1))
+
+    a = (
+        math.sin(delta_phi / 2) ** 2
+        + math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda / 2) ** 2
+    )
+    return int(radius * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a)))
+
+
+def notify_nearby_ready_residents(conn, barangay_id, truck_latitude, truck_longitude):
+    schedule = get_current_schedule_for_barangay(conn, barangay_id)
+    if not schedule:
+        return 0
+
+    cur = None
+    sent_count = 0
+    try:
+        cur = conn.cursor(dictionary=True, buffered=True)
+        cur.execute("""
+            SELECT rm.resident_phone, rm.latitude, rm.longitude, r.fcm_token
+            FROM ready_markers rm
+            JOIN residents r ON r.phone = rm.resident_phone
+            WHERE rm.schedule_id=%s
+              AND rm.barangay_id=%s
+              AND rm.is_ready=1
+              AND r.is_active=1
+              AND r.fcm_token IS NOT NULL
+              AND r.fcm_token <> ''
+        """, (schedule["id"], barangay_id))
+
+        for resident in cur.fetchall():
+            distance = distance_meters(
+                truck_latitude,
+                truck_longitude,
+                resident["latitude"],
+                resident["longitude"],
+            )
+            if distance > TRUCK_NEAR_ALERT_METERS:
+                continue
+
+            cur.execute("""
+                SELECT id
+                FROM truck_proximity_alerts
+                WHERE schedule_id=%s
+                  AND resident_phone=%s
+                  AND alert_type='truck_near'
+            """, (schedule["id"], resident["resident_phone"]))
+            if cur.fetchone():
+                continue
+
+            send_notification_to_token(
+                token=resident["fcm_token"],
+                title="Truck is nearby",
+                body="The waste collection truck is almost at your location. Please prepare your waste.",
+                data={
+                    "type": "truck_near",
+                    "schedule_id": schedule["id"],
+                    "barangay_id": barangay_id,
+                    "distance_meters": distance,
+                },
+            )
+
+            cur.execute("""
+                INSERT INTO truck_proximity_alerts
+                (schedule_id, resident_phone, alert_type, distance_meters, sent_at)
+                VALUES (%s, %s, 'truck_near', %s, NOW())
+            """, (schedule["id"], resident["resident_phone"], distance))
+            sent_count += 1
+
+        conn.commit()
+        return sent_count
+    except Exception as e:
+        print("Truck proximity notification skipped:", e)
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+        return sent_count
     finally:
         close_quietly(cur)
 
@@ -1561,7 +1678,9 @@ def api_update_truck_location():
         ))
         conn.commit()
 
-        return jsonify({"message": "Updated"}), 200
+        alerted = notify_nearby_ready_residents(conn, barangay_id, latitude, longitude)
+
+        return jsonify({"message": "Updated", "nearby_alerts_sent": alerted}), 200
     finally:
         close_quietly(cur2)
         close_quietly(cur)
