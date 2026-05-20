@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 from db_config import get_db_connection, get_last_db_error
 
 
-from fcm_service import send_notification_to_topic, send_notification_to_token
+from fcm_service import get_firebase_status, send_notification_to_topic, send_notification_to_token
 
 
 # =====================================================================
@@ -41,7 +41,7 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY", "admin-panel-secret")
 
 CORS(app)
 
-TRUCK_NEAR_ALERT_METERS = int(os.getenv("TRUCK_NEAR_ALERT_METERS", "700"))
+TRUCK_NEAR_ALERT_METERS = int(os.getenv("TRUCK_NEAR_ALERT_METERS", "5000"))
 jwt = JWTManager(app)
 
 
@@ -455,15 +455,17 @@ def safe_send_topic(topic: str, title: str, body: str, data=None):
 
         payload = {str(k): "" if v is None else str(v) for k, v in payload.items()}
 
-        send_notification_to_topic(
+        response = send_notification_to_topic(
             topic=topic,
             title=str(title),
             body=str(body),
             data=payload,
         )
         print(f"✅ FCM SENT topic={topic} type={payload.get('type')}")
+        return response
     except Exception as e:
         print("❌ FCM ERROR:", e)
+        return None
 
 
 def format_schedule_row(s):
@@ -1480,11 +1482,11 @@ def api_register_resident():
         cur2 = conn.cursor()
         cur2.execute("""
             INSERT INTO residents (phone, barangay_id, barangay_name, fcm_token)
-            VALUES (%s, %s, %s, %s)
+            VALUES (%s, %s, %s, NULLIF(%s, ''))
             ON DUPLICATE KEY UPDATE
                 barangay_id = VALUES(barangay_id),
                 barangay_name = VALUES(barangay_name),
-                fcm_token = VALUES(fcm_token)
+                fcm_token = COALESCE(NULLIF(VALUES(fcm_token), ''), fcm_token)
         """, (phone, barangay_id, barangay_name, fcm_token))
         conn.commit()
 
@@ -1916,13 +1918,28 @@ def fcm_test():
     if not env_flag("ALLOW_DEBUG_ROUTES"):
         return "Debug routes are disabled", 404
 
-    safe_send_topic(
+    response = safe_send_topic(
         topic="all_residents",
         title="FCM Test",
         body="If you see this, FCM is working ✅",
         data={"type": "test"},
     )
-    return jsonify({"sent": True})
+    return jsonify({
+        "sent": response is not None,
+        "response": response,
+        "firebase": get_firebase_status(),
+    })
+
+
+@app.route("/debug/fcm-status")
+def fcm_status():
+    if not env_flag("ALLOW_DEBUG_ROUTES"):
+        return "Debug routes are disabled", 404
+
+    return jsonify({
+        "firebase": get_firebase_status(),
+        "truck_near_alert_meters": TRUCK_NEAR_ALERT_METERS,
+    })
 
 
 # =====================================================================
