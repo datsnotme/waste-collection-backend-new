@@ -766,7 +766,7 @@ def add_schedule():
             safe_send_topic(
                 topic=topic_for_barangay(barangay_id),
                 title="Waste Collection Schedule",
-                body=f"{barangay_name}: {collection_date} at {collection_time} ({waste_type})",
+                body=f"Note: {notes or 'No note'} | Barangay: {barangay_name}",
                 data={
                     "type": "schedule",
                     "schedule_id": schedule_id,
@@ -775,12 +775,13 @@ def add_schedule():
                     "collection_date": collection_date,
                     "collection_time": collection_time,
                     "waste_type": waste_type,
+                    "notes": notes,
                 },
             )
             safe_send_topic(
                 topic=driver_topic_for_barangay(barangay_id),
                 title="New Collection Schedule",
-                body=f"{barangay_name}: {collection_date} at {collection_time} ({waste_type})",
+                body=f"Note: {notes or 'No note'} | Barangay: {barangay_name}",
                 data={
                     "type": "driver_schedule",
                     "schedule_id": schedule_id,
@@ -789,6 +790,7 @@ def add_schedule():
                     "collection_date": collection_date,
                     "collection_time": collection_time,
                     "waste_type": waste_type,
+                    "notes": notes,
                 },
             )
 
