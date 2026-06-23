@@ -42,6 +42,7 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY", "admin-panel-secret")
 CORS(app)
 
 TRUCK_NEAR_ALERT_METERS = int(os.getenv("TRUCK_NEAR_ALERT_METERS", "5000"))
+TRUCK_NEAR_ALERT_COOLDOWN_MINUTES = int(os.getenv("TRUCK_NEAR_ALERT_COOLDOWN_MINUTES", "5"))
 jwt = JWTManager(app)
 
 
@@ -557,16 +558,22 @@ def notify_nearby_ready_residents(conn, barangay_id, truck_latitude, truck_longi
                 continue
 
             cur.execute("""
-                SELECT id
+                SELECT id, TIMESTAMPDIFF(SECOND, sent_at, NOW()) AS seconds_since_sent
                 FROM truck_proximity_alerts
                 WHERE schedule_id=%s
                   AND resident_phone=%s
                   AND alert_type='truck_near'
             """, (schedule["id"], resident["resident_phone"]))
-            if cur.fetchone():
+            existing_alert = cur.fetchone()
+            cooldown_seconds = TRUCK_NEAR_ALERT_COOLDOWN_MINUTES * 60
+            if (
+                existing_alert
+                and existing_alert.get("seconds_since_sent") is not None
+                and int(existing_alert["seconds_since_sent"]) < cooldown_seconds
+            ):
                 continue
 
-            send_notification_to_token(
+            response = send_notification_to_token(
                 token=resident["fcm_token"],
                 title="Truck is nearby",
                 body="The waste collection truck is almost at your location. Please prepare your waste.",
@@ -578,11 +585,21 @@ def notify_nearby_ready_residents(conn, barangay_id, truck_latitude, truck_longi
                 },
             )
 
-            cur.execute("""
-                INSERT INTO truck_proximity_alerts
-                (schedule_id, resident_phone, alert_type, distance_meters, sent_at)
-                VALUES (%s, %s, 'truck_near', %s, NOW())
-            """, (schedule["id"], resident["resident_phone"], distance))
+            if not response:
+                continue
+
+            if existing_alert:
+                cur.execute("""
+                    UPDATE truck_proximity_alerts
+                    SET distance_meters=%s, sent_at=NOW()
+                    WHERE id=%s
+                """, (distance, existing_alert["id"]))
+            else:
+                cur.execute("""
+                    INSERT INTO truck_proximity_alerts
+                    (schedule_id, resident_phone, alert_type, distance_meters, sent_at)
+                    VALUES (%s, %s, 'truck_near', %s, NOW())
+                """, (schedule["id"], resident["resident_phone"], distance))
             sent_count += 1
 
         conn.commit()
@@ -1774,7 +1791,12 @@ def api_update_truck_location():
 
         alerted = notify_nearby_ready_residents(conn, barangay_id, latitude, longitude)
 
-        return jsonify({"message": "Updated", "nearby_alerts_sent": alerted}), 200
+        return jsonify({
+            "message": "Updated",
+            "nearby_alerts_sent": alerted,
+            "truck_near_alert_meters": TRUCK_NEAR_ALERT_METERS,
+            "truck_near_alert_cooldown_minutes": TRUCK_NEAR_ALERT_COOLDOWN_MINUTES,
+        }), 200
     finally:
         close_quietly(cur2)
         close_quietly(cur)
@@ -1941,6 +1963,7 @@ def fcm_status():
     return jsonify({
         "firebase": get_firebase_status(),
         "truck_near_alert_meters": TRUCK_NEAR_ALERT_METERS,
+        "truck_near_alert_cooldown_minutes": TRUCK_NEAR_ALERT_COOLDOWN_MINUTES,
     })
 
 
