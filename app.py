@@ -520,7 +520,6 @@ def notify_nearby_ready_residents(conn, barangay_id, truck_latitude, truck_longi
         return 0
 
     cur = None
-    sent_count = 0
     try:
         cur = conn.cursor(dictionary=True, buffered=True)
         cur.execute("""
@@ -536,81 +535,87 @@ def notify_nearby_ready_residents(conn, barangay_id, truck_latitude, truck_longi
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         """)
         cur.execute("""
-            SELECT rm.resident_phone, rm.latitude, rm.longitude, r.fcm_token
+            SELECT rm.latitude, rm.longitude
             FROM ready_markers rm
-            JOIN residents r ON r.phone = rm.resident_phone
             WHERE rm.schedule_id=%s
               AND rm.barangay_id=%s
               AND rm.is_ready=1
-              AND r.is_active=1
-              AND r.fcm_token IS NOT NULL
-              AND r.fcm_token <> ''
         """, (schedule["id"], barangay_id))
 
-        for resident in cur.fetchall():
+        nearby_distances = []
+        for marker in cur.fetchall():
             distance = distance_meters(
                 truck_latitude,
                 truck_longitude,
-                resident["latitude"],
-                resident["longitude"],
+                marker["latitude"],
+                marker["longitude"],
             )
-            if distance > TRUCK_NEAR_ALERT_METERS:
-                continue
+            if distance <= TRUCK_NEAR_ALERT_METERS:
+                nearby_distances.append(distance)
 
+        if not nearby_distances:
+            conn.commit()
+            return 0
+
+        nearest_distance = min(nearby_distances)
+        barangay_alert_key = f"brgy_{barangay_id}"
+
+        cur.execute("""
+            SELECT id, TIMESTAMPDIFF(SECOND, sent_at, NOW()) AS seconds_since_sent
+            FROM truck_proximity_alerts
+            WHERE schedule_id=%s
+              AND resident_phone=%s
+              AND alert_type='truck_near_barangay'
+        """, (schedule["id"], barangay_alert_key))
+        existing_alert = cur.fetchone()
+        cooldown_seconds = TRUCK_NEAR_ALERT_COOLDOWN_MINUTES * 60
+        if (
+            existing_alert
+            and existing_alert.get("seconds_since_sent") is not None
+            and int(existing_alert["seconds_since_sent"]) < cooldown_seconds
+        ):
+            conn.commit()
+            return 0
+
+        response = safe_send_topic(
+            topic=topic_for_barangay(barangay_id),
+            title="Truck is nearby",
+            body="The waste collection truck is almost at your barangay. Please prepare your waste.",
+            data={
+                "type": "truck_near",
+                "schedule_id": schedule["id"],
+                "barangay_id": barangay_id,
+                "barangay_name": schedule.get("barangay_name"),
+                "distance_meters": nearest_distance,
+            },
+        )
+
+        if not response:
+            conn.rollback()
+            return 0
+
+        if existing_alert:
             cur.execute("""
-                SELECT id, TIMESTAMPDIFF(SECOND, sent_at, NOW()) AS seconds_since_sent
-                FROM truck_proximity_alerts
-                WHERE schedule_id=%s
-                  AND resident_phone=%s
-                  AND alert_type='truck_near'
-            """, (schedule["id"], resident["resident_phone"]))
-            existing_alert = cur.fetchone()
-            cooldown_seconds = TRUCK_NEAR_ALERT_COOLDOWN_MINUTES * 60
-            if (
-                existing_alert
-                and existing_alert.get("seconds_since_sent") is not None
-                and int(existing_alert["seconds_since_sent"]) < cooldown_seconds
-            ):
-                continue
-
-            response = send_notification_to_token(
-                token=resident["fcm_token"],
-                title="Truck is nearby",
-                body="The waste collection truck is almost at your location. Please prepare your waste.",
-                data={
-                    "type": "truck_near",
-                    "schedule_id": schedule["id"],
-                    "barangay_id": barangay_id,
-                    "distance_meters": distance,
-                },
-            )
-
-            if not response:
-                continue
-
-            if existing_alert:
-                cur.execute("""
-                    UPDATE truck_proximity_alerts
-                    SET distance_meters=%s, sent_at=NOW()
-                    WHERE id=%s
-                """, (distance, existing_alert["id"]))
-            else:
-                cur.execute("""
-                    INSERT INTO truck_proximity_alerts
-                    (schedule_id, resident_phone, alert_type, distance_meters, sent_at)
-                    VALUES (%s, %s, 'truck_near', %s, NOW())
-                """, (schedule["id"], resident["resident_phone"], distance))
-            sent_count += 1
+                UPDATE truck_proximity_alerts
+                SET distance_meters=%s, sent_at=NOW()
+                WHERE id=%s
+            """, (nearest_distance, existing_alert["id"]))
+        else:
+            cur.execute("""
+                INSERT INTO truck_proximity_alerts
+                (schedule_id, resident_phone, alert_type, distance_meters, sent_at)
+                VALUES (%s, %s, 'truck_near_barangay', %s, NOW())
+            """, (schedule["id"], barangay_alert_key, nearest_distance))
 
         conn.commit()
-        return sent_count
+        return 1
     except Exception as e:
         print("Truck proximity notification skipped:", e)
         try:
             conn.rollback()
         except Exception:
             pass
-        return sent_count
+        return 0
     finally:
         close_quietly(cur)
 
