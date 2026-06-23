@@ -219,6 +219,39 @@
       color: #86a796;
     }
 
+    .password-wrap {
+      position: relative;
+    }
+
+    .password-wrap .input {
+      padding-right: 74px;
+    }
+
+    .password-toggle {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      border: 0;
+      border-radius: 999px;
+      padding: 7px 11px;
+      cursor: pointer;
+      background: rgba(77, 245, 142, 0.12);
+      color: #d6fbe1;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .02em;
+      transition: background .16s ease, color .16s ease, transform .16s ease;
+    }
+
+    .password-toggle:hover,
+    .password-toggle:focus-visible {
+      background: rgba(77, 245, 142, 0.22);
+      color: #ffffff;
+      outline: none;
+      transform: translateY(-50%) scale(1.03);
+    }
+
     .btn {
       margin-top: 8px;
       width: 100%;
@@ -328,7 +361,24 @@
 
           <div>
             <label>Password</label>
-            <input class="input" type="password" name="password" placeholder="Enter your password" required />
+            <div class="password-wrap">
+              <input
+                class="input"
+                id="admin-password"
+                type="password"
+                name="password"
+                placeholder="Enter your password"
+                autocomplete="current-password"
+                required
+              />
+              <button
+                class="password-toggle"
+                id="toggle-password"
+                type="button"
+                aria-label="Show password"
+                aria-pressed="false"
+              >Show</button>
+            </div>
           </div>
 
           <button class="btn" type="submit">Enter Dashboard</button>
@@ -338,5 +388,17 @@
       </div>
     </section>
   </div>
+  <script>
+    const passwordInput = document.getElementById('admin-password');
+    const passwordToggle = document.getElementById('toggle-password');
+
+    passwordToggle?.addEventListener('click', () => {
+      const isHidden = passwordInput.type === 'password';
+      passwordInput.type = isHidden ? 'text' : 'password';
+      passwordToggle.textContent = isHidden ? 'Hide' : 'Show';
+      passwordToggle.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
+      passwordToggle.setAttribute('aria-pressed', String(isHidden));
+    });
+  </script>
 </body>
 </html>
